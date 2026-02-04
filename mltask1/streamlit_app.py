@@ -260,7 +260,7 @@ st.markdown("""
 # Load model using pickle
 @st.cache_resource
 def load_model():
-    with open("model.pkl", "rb") as file:
+    with open("mltask1/model.pkl", "rb") as file:
         model = pickle.load(file)
     return model
 
@@ -289,4 +289,5 @@ if st.button("Analyze Sentiment"):
         if prediction.lower() == "positive":
             st.success(f" **{prediction} Review** ")
         else:
+
             st.error(f" **{prediction} Review** ")
