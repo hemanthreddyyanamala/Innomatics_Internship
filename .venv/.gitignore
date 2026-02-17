@@ -1,0 +1,9 @@
+*.venv
+*.env
+__pycache__/
+*.pyc
+*.pyo
+*practice*
+*.log
+main.py
+.python-version
