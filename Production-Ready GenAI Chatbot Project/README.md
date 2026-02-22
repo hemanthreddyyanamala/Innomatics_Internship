@@ -1,37 +1,55 @@
-Production-Ready-GenAI-Chatbot
-│
-├── User
-│   │
-│   └── UI Layer (Streamlit / Gradio)
-│       │
-│       ├── Chat Interface
-│       ├── Conversation History Display
-│       └── Loading Indicator
-│
-├── Backend Layer
-│   │
-│   ├── API Handling Module
-│   │   ├── Gemini API Integration
-│   │   ├── Request/Response Handling
-│   │   ├── Exception Handling
-│   │   └── Logging
-│   │
-│   ├── Prompt Engineering Module
-│   │   ├── System Prompts
-│   │   ├── Role-Based Instructions
-│   │   └── Domain Constraints
-│   │
-│   └── Conversation Memory Module
-│       ├── Chat History Management
-│       ├── Context Preservation
-│       └── Session-Based Memory
-│
-└── Cloud Deployment (AWS EC2)
-    ├── Public IP Access
-    ├── Environment Variables
-    ├── Port Configuration
-    └── Security Group Setup
 # Production-Ready GenAI Chatbot Project
+flowchart TB
+    classDef user fill:#08427B,stroke:#073B6F,color:#fff
+    classDef system fill:#1168BD,stroke:#0B4884,color:#fff
+    classDef external fill:#666666,stroke:#0B4884,color:#fff
+    classDef cloud fill:#0E7C7B,stroke:#0B5E5C,color:#fff
+
+    user["👤 User
+    (End User)"]
+
+    ui["🖥️ Streamlit UI
+    (Chat Interface Layer)"]
+
+    backend["⚙️ Backend Layer
+    (Application Core)"]
+
+    prompt["📝 Prompt Engineering Module
+    (System & Role Prompts)"]
+
+    memory["🧠 Conversation Memory
+    (Session Context Manager)"]
+
+    gemini["✨ Gemini API
+    (Google GenAI Model)"]
+
+    ec2["☁️ AWS EC2
+    (Cloud Deployment Environment)"]
+
+    logs["📊 Logging & Monitoring
+    (API Logs / Error Tracking)"]
+
+    user -->|Interacts via HTTPS| ui
+    ui -->|Sends Request| backend
+    backend -->|Loads Prompts| prompt
+    backend -->|Maintains Context| memory
+    backend -->|Calls API| gemini
+    gemini -->|Generates Response| backend
+    backend -->|Logs Activity| logs
+    backend -->|Returns Response| ui
+
+    ec2 -->|Hosts| ui
+    ec2 -->|Hosts| backend
+
+    class user user
+    class ui,backend,prompt,memory system
+    class gemini,logs external
+    class ec2 cloud
+
+    linkStyle default stroke:#ffffff,color:#ffffff
+
+
+
 
 ---
 
