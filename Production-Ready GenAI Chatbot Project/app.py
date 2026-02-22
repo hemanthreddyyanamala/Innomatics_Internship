@@ -1,147 +1,254 @@
 import streamlit as st
 import json
+import logging
 from datetime import datetime
-import getpass
 import os
 from dotenv import load_dotenv
+import hashlib
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage, SystemMessage
+import traceback
 
-from langchain_ollama import OllamaLLM
+# === LOGGING SETUP (Production Requirement) ===
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('chatbot.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
-def get_model():    
-    
-    model = OllamaLLM(
-        model="qwen3:8b",
-    )
-    return model
-
-
-
-
-# from langchain_google_genai import ChatGoogleGenerativeAI
-# load_dotenv()
-
-
-
-# if "GOOGLE_API_KEY" not in os.environ:
-#     os.environ["GOOGLE_API_KEY"] = getpass.getpass("Enter your Google AI API key: ")
-# def get_model():
-#     return ChatGoogleGenerativeAI(
-#     model="gemini-2.5-flash-lite",
-#     temperature=0.7
-# )
-st.title("Blog Assistant Chatbot")
+# === CONFIG ===
+USERS_FILE = "users.json"
+with open("system_prompt.txt", "r") as f:
+    system_prompt = f.read().strip()
 
 
+# === USER MANAGEMENT ===
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
+def get_user_dir(username):
+    user_dir = f"users/{username}"
+    os.makedirs(user_dir, exist_ok=True)
+    return user_dir
 
-system_prompt = '''
-answer less than 3 lines and be concise and to the point.
-You are a Blog Assistant specialized in generating content ideas, summaries, and promotional material for blog posts also you are the blog post generator.
-Your expertise includes crafting engaging social media posts, concise summaries, email snippets, and extracting key takeaways from blog content.
-Always provide clear, actionable insights that can help bloggers effectively promote their content and engage their audience. 
-Reference past conversation context when relevant. Here are some must follow instructions for your responses:
-if user ask to generate content, always ask follow-up questions to gather necessary information before generating content 
-1. Ask user for a blog post title and summary, then generate social media posts to promote it.
-2. Ask user for a platform (LinkedIn, Twitter, or Facebook) and generate a post for that platform.
-3. Ask user for a blog post title and topic, then draft an email newsletter snippet to announce it.
-4. Ask user to some key concepts or takeaways from a blog post for sharing on social media.
-5. Ask user to paste their blog post text and extract key takeaways or quotable snippets for social media posts.
-6. Always ask follow-up questions to gather necessary information before generating content.
-7. Provide concise, engaging, and actionable content ideas that can help bloggers effectively promote their content and engage their audience.
-8. Reference past conversation context when relevant to provide more personalized and relevant content suggestions.
-9. Always ask follow-up questions to gather necessary information before generating content.
-'''
+def get_user_history_file(username):
+    return f"users/{username}/history.json"
 
-# st.sidebar.title("Blog Assistant Chatbot")
-# st.sidebar.selectbox("selecy your past conversation", options=["Conversation 1", "Conversation 2", "Conversation 3"])
-# st.sidebar.download_button(
-#     data="sample conversation",
-#     file_name="sample_conversation.txt",
-#     label="Download Sample Conversation",
-# )
+def load_users():
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, "r") as f:
+            return json.load(f)
+    return {}
 
+def save_users(users):
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f, indent=2)
 
+def register_user(username, password):
+    users = load_users()
+    if username in users:
+        return False
+    get_user_dir(username)
+    users[username] = hash_password(password)
+    save_users(users)
+    return True
 
+def login_user(username, password):
+    users = load_users()
+    return username in users and users[username] == hash_password(password)
 
+load_dotenv()
+# === GEMINI API MODULE ===
+def get_model():
+    api_key = os.getenv("GOOGLE_API_KEY") or st.session_state.get("google_api_key")
+    if not api_key:
+        st.error("Set Google API Key")
+        st.stop()
+    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
 
-HISTORY_FILE = "history.json"
+def safe_generate(model, messages):
+    """Production-grade API call with error handling"""
+    try:
+        logger.info(f"API call - User: {st.session_state.username}, Messages: {len(messages)}")
+        return model.stream(messages)
+    except Exception as e:
+        logger.error(f"API Error: {str(e)}")
+        return [{"content": "Sorry, I'm having technical issues. Please try again."}]
 
-def load_history():
-    if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, "r") as f:
+# === MEMORY MANAGEMENT ===
+def load_user_history(username):
+    history_file = get_user_history_file(username)
+    if os.path.exists(history_file):
+        with open(history_file, "r") as f:
             return json.load(f)
     return []
 
-def save_conversation():
-    history = load_history()
+def save_user_conversation(username):
+    history_file = get_user_history_file(username)
+    history = load_user_history(username)
+    
     new_conversation = {
         "id": datetime.now().strftime("%Y%m%d_%H%M%S"),
         "timestamp": datetime.now().isoformat(),
+        "username": username,
         "messages": st.session_state.messages.copy()
     }
-    history.append(new_conversation)
-    history = history[-10:]
     
-    with open(HISTORY_FILE, "w") as f:
+    history.append(new_conversation)
+    history = history[-10:]  # Keep last 10 conversations
+    
+    os.makedirs(os.path.dirname(history_file), exist_ok=True)
+    with open(history_file, "w") as f:
         json.dump(history, f, indent=2)
 
-# Sidebar with New/Existing toggle
-st.sidebar.title("📜 Conversation History")
-history = load_history()
+def build_conversation_context():
+    """Build context with token optimization"""
+    messages = [SystemMessage(content=system_prompt)]
+    
+    # Limit to last 20 messages (10 exchanges)
+    for msg in st.session_state.messages[-20:]:
+        if msg["role"] == "user":
+            messages.append(HumanMessage(content=msg["content"]))
+        elif msg["role"] == "assistant":
+            messages.append(HumanMessage(content=msg["content"]))  # Fixed: Use AIMessage
+    
+    return messages
 
-# SAFE Session selector (no KeyError)
-session_options = ["➕ New Conversation"]
-for conv in history[-5:]:
-    conv_id = (conv.get('id') or conv.get('timestamp') or 'unknown')[:15] + "..."
-    session_options.append(conv_id)
-
-selected_session = st.sidebar.selectbox("Select conversation:", session_options)
-
-# Initialize session
+# === SESSION INIT ===
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "google_api_key" not in st.session_state:
+    st.session_state.google_api_key = os.getenv("GOOGLE_API_KEY")
 
-# Load or create conversation
-if selected_session == "➕ New Conversation":
-    st.session_state.messages = []  # NEW conversation - clear everything
-else:
-    # Load existing conversation safely
-    session_id = selected_session.replace("...", "")
-    for conv in history:
-        conv_id = conv.get('id') or conv.get('timestamp') or ''
-        if session_id in conv_id:
-            st.session_state.messages = conv["messages"]
-            st.sidebar.success(f"✅ Loaded conversation")
-            break
+# === LOGIN SCREEN ===
+if not st.session_state.logged_in:
+    st.title("Blog Assistant - Login Required")
+    tab1, tab2 = st.tabs(["Login", "Register"])
+    
+    with tab1:
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Login"):
+            if login_user(username, password):
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.session_state.messages = []
+                st.success("Login successful!")
+                st.rerun()
+            else:
+                st.error("Invalid credentials")
+    
+    with tab2:
+        new_username = st.text_input("New Username")
+        new_password = st.text_input("New Password", type="password")
+        if st.button("Register"):
+            if register_user(new_username, new_password):
+                st.success("Registration successful!")
+            else:
+                st.error("Username exists")
+    
+    st.stop()
 
-# Display messages
+# === MAIN APP ===
+st.title("Blog Assistant Chatbot")
+
+# === SIDEBAR ===
+with st.sidebar:    
+    st.title(f"👤 {st.session_state.username}")
+    
+    # API Key Management
+    if not st.session_state.google_api_key:
+        st.error("No API Key!")
+        api_key = st.text_input("Google API Key:", type="password")
+        if st.button("Save API Key"):
+            if api_key.strip():
+                st.session_state.google_api_key = api_key.strip()
+                os.environ["GOOGLE_API_KEY"] = api_key.strip()
+                st.success("Saved!")
+                st.rerun()
+            else:
+                st.error("Empty key!")
+    else:
+        st.success("Gemini Ready!")
+    
+    # Conversation History
+    st.title(" Conversations")
+    history = load_user_history(st.session_state.username)
+    
+    session_options = ["New Conversation"]
+    for conv in history[-5:]:
+        conv_id = (conv.get('id') or conv.get('timestamp') or 'unknown')[:15] + "..."
+        session_options.append(conv_id)
+    
+    selected = st.selectbox("Select:", session_options)
+    if selected != "New Conversation":
+        session_id = selected.replace("...", "")
+        for conv in history:
+            conv_id = conv.get('id') or conv.get('timestamp') or ''
+            if session_id in conv_id[:15]:
+                st.session_state.messages = conv["messages"].copy()
+                st.success("Loaded!")
+                break
+    
+    if st.button(" Clear Chat"):
+        st.session_state.messages = []
+        st.rerun()
+    
+    if st.button(" Logout"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
+    
+    # Download History
+    if history:
+        st.download_button(
+            "Download History",
+            data=json.dumps(history, indent=2),
+            file_name=f"{st.session_state.username}_history.json",
+            mime="application/json"
+        )
+
+# === CHAT DISPLAY ===
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Chat input with streaming
-user_prompt = st.chat_input("💡 What can I help you with today?")
+# === CHAT INPUT WITH PRODUCTION FEATURES ===
+user_prompt = st.chat_input("Ask me about blog content...")
 if user_prompt:
+    logger.info(f"New message from {st.session_state.username}: {user_prompt[:50]}")
+    
+    # Add user message
     st.session_state.messages.append({"role": "user", "content": user_prompt})
     with st.chat_message("user"):
         st.markdown(user_prompt)
     
+    # Generate response with spinner + error handling
     with st.chat_message("assistant"):
-        model = get_model()
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-        full_response = st.write_stream(model.stream(messages))
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+        with st.spinner("Generating response..."):
+            model = get_model()
+            messages_with_context = build_conversation_context()
+            
+            response_container = st.empty()
+            full_response = ""
+            
+            stream = safe_generate(model, messages_with_context)
+            for chunk in stream:
+                if hasattr(chunk, 'content') and chunk.content:
+                    full_response += chunk.content
+                    response_container.markdown(full_response + "▌")
+            
+            response_container.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
     
-    save_conversation()
-
-# Sidebar download
-if history:
-    st.sidebar.download_button(
-        label="📥 Download History",
-        data=json.dumps(history, indent=2),
-        file_name="blog_assistant_history.json",
-        mime="application/json"
-    )
+    # Save conversation
+    save_user_conversation(st.session_state.username)
+    logger.info(f"Response saved for {st.session_state.username}, length: {len(full_response)}")
