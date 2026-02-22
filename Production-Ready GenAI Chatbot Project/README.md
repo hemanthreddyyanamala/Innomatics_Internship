@@ -1,56 +1,41 @@
 # Production-Ready GenAI Chatbot Project
+
+## Architecture
+
+```mermaid
 flowchart TB
+
     classDef user fill:#08427B,stroke:#073B6F,color:#fff
     classDef system fill:#1168BD,stroke:#0B4884,color:#fff
     classDef external fill:#666666,stroke:#0B4884,color:#fff
     classDef cloud fill:#0E7C7B,stroke:#0B5E5C,color:#fff
 
-    user["👤 User
-    (End User)"]
+    user["User (End User)"]
+    ui["Streamlit UI (Chat Interface Layer)"]
+    backend["Backend Layer (Application Core)"]
+    prompt["Prompt Engineering Module"]
+    memory["Conversation Memory"]
+    gemini["Gemini API (Google GenAI Model)"]
+    ec2["AWS EC2 (Cloud Deployment)"]
+    logs["Logging & Monitoring"]
 
-    ui["🖥️ Streamlit UI
-    (Chat Interface Layer)"]
+    user --> ui
+    ui --> backend
+    backend --> prompt
+    backend --> memory
+    backend --> gemini
+    gemini --> backend
+    backend --> logs
+    backend --> ui
 
-    backend["⚙️ Backend Layer
-    (Application Core)"]
-
-    prompt["📝 Prompt Engineering Module
-    (System & Role Prompts)"]
-
-    memory["🧠 Conversation Memory
-    (Session Context Manager)"]
-
-    gemini["✨ Gemini API
-    (Google GenAI Model)"]
-
-    ec2["☁️ AWS EC2
-    (Cloud Deployment Environment)"]
-
-    logs["📊 Logging & Monitoring
-    (API Logs / Error Tracking)"]
-
-    user -->|Interacts via HTTPS| ui
-    ui -->|Sends Request| backend
-    backend -->|Loads Prompts| prompt
-    backend -->|Maintains Context| memory
-    backend -->|Calls API| gemini
-    gemini -->|Generates Response| backend
-    backend -->|Logs Activity| logs
-    backend -->|Returns Response| ui
-
-    ec2 -->|Hosts| ui
-    ec2 -->|Hosts| backend
+    ec2 --> ui
+    ec2 --> backend
 
     class user user
     class ui,backend,prompt,memory system
     class gemini,logs external
     class ec2 cloud
-
-    linkStyle default stroke:#ffffff,color:#ffffff
-
-
-
-
+```
 ---
 
 ## 1. Project Title
