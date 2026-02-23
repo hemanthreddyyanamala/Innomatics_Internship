@@ -118,4 +118,7 @@ The chatbot provides structured, intelligent responses tailored for:
 - [x] Comprehensive README with architecture documentation.
 
 ---
+Live:
+http://ec2-43-204-98-113.ap-south-1.compute.amazonaws.com:8501/ (AWS)
+https://huggingface.co/spaces/hemanth003/genaiproject01 (Hugging Face)
 © 2026 | Completed for **Innomatics Research Labs**
