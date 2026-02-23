@@ -118,4 +118,4 @@ The chatbot provides structured, intelligent responses tailored for:
 - [x] Comprehensive README with architecture documentation.
 
 ---
-© 2024 | Completed for **Innomatics Research Labs**
+© 2026 | Completed for **Innomatics Research Labs**
