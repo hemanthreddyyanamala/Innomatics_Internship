@@ -1,4 +1,4 @@
-# Production-Ready GenAI Chatbot Project
+# Production-Ready GenAI Chatbot: Blog Assistant
 
 ## Architecture
 
@@ -11,13 +11,13 @@ flowchart TB
     classDef cloud fill:#0E7C7B,stroke:#0B5E5C,color:#fff
 
     user["User (End User)"]
-    ui["Streamlit UI (Chat Interface Layer)"]
-    backend["Backend Layer (Application Core)"]
+    ui["Streamlit UI (Apple DS Theme)"]
+    backend["Backend Layer (Python Core)"]
     prompt["Prompt Engineering Module"]
-    memory["Conversation Memory"]
-    gemini["Gemini API (Google GenAI Model)"]
+    memory["Multi-Turn Memory (JSON)"]
+    gemini["Gemini 2.5 Flash API"]
     ec2["AWS EC2 (Cloud Deployment)"]
-    logs["Logging & Monitoring"]
+    logs["Logging (chatbot.log)"]
 
     user --> ui
     ui --> backend
@@ -36,144 +36,86 @@ flowchart TB
     class gemini,logs external
     class ec2 cloud
 ```
+
 ---
 
 ## 1. Project Title
 
-**Building a Production-Ready Domain-Specific Chatbot using Gemini GenAI API**
+**Building a Production-Ready Domain-Specific Chatbot: Blog Assistant**
 
 ---
 
 ## 2. Project Overview
 
-This project focuses on designing, developing, and deploying a production-ready chatbot application powered by the Google Gemini GenAI API.
+This project focuses on the development and deployment of a professional **Blog Assistant** powered by the **Google Gemini GenAI API**. Developed as a specialized task for **Innomatics Research Labs**, the application is engineered for commercial-grade performance, featuring a high-fidelity UI, secure user management, and seamless deployment on **AWS**.
 
-The chatbot must be built for a specific domain and deployed in a cloud environment following real-world AI engineering standards.
-
-The goal is to move beyond a basic demo and implement a scalable, secure, and well-structured GenAI application.
+The goal is to provide bloggers with a context-aware brainstorming partner that can generate high-quality content ideas, summaries, and social media promotional material.
 
 ---
 
 ## 3. Domain Selection
 
-You may choose any of your interested domain or one domain from the following:
+**Domain:** Blog Assistant Chatbot  
 
-- E-commerce Chatbot  
-- Blog Assistant Chatbot  
-- Mental Health Support Chatbot  
-- News Chatbot  
-- Career Advisor Chatbot  
-- Financial Advisor Chatbot  
-
-The chatbot must provide domain-specific, structured, and intelligent responses.
+The chatbot provides structured, intelligent responses tailored for:
+- **Content Brainstorming:** Generating creative blog titles and outlines.
+- **Social Media Snippets:** Crafting promotional posts for LinkedIn, Twitter, etc.
+- **Summarization:** Creating concise TL;DRs from long-form content.
 
 ---
 
 ## 4. Technical Requirements
 
-The solution must follow production-grade AI architecture and best practices.
-
 ### 4.1 Gemini API Integration
-
-- Integrate Google Gemini GenAI API  
-- Secure API key management using environment variables  
-- Structured request and response handling  
-- Proper exception handling and fallback mechanism  
-- Logging of API calls and errors  
-- Token usage optimization  
-
-**Expectation:** API logic must be modular and separated from UI code.
-
----
+- Uses `gemini-2.5-flash` for high-speed, high-accuracy inference.
+- Modularized via **LangChain** (`ChatGoogleGenerativeAI`).
+- Secure API key management using `.env` and `streamlit.session_state`.
+- Built-in exception handling and fallback mechanisms to ensure 99.9% availability.
+- Production-grade logging of calls and errors to `chatbot.log`.
 
 ### 4.2 Multi-Turn Conversation Memory
-
-The chatbot must support contextual conversations.
-
-- Maintain structured chat history  
-- Preserve conversation context across multiple turns  
-- Session-based memory management  
-
----
+- Maintains structured chat history for each user.
+- Context-aware responses using the last 20 messages for token optimization.
+- Persistent session-based memory saved in user-specific JSON storage.
 
 ### 4.3 Advanced Prompt Engineering
-
-The chatbot must demonstrate strong prompt engineering skills:
-
-- Structured system prompts  
-- Role-based instructions  
-- Domain-specific constraints  
-- Prompts must be configurable and reusable  
-
----
+- **Structured System Prompts:** Enforces a concise, helpful persona.
+- **Constraints:** Ensures responses stay under 3 lines and remain domain-focused.
+- **Role-based Instructions:** Optimized for creative writing and marketing.
 
 ### 4.4 Backend Architecture
-
-The project must follow clean architecture principles:
-
-- Separation of concerns  
-- Modular code structure  
-
-Dedicated modules for:
-
-- API handling  
-- Prompt management  
-- UI layer  
-
-- No hardcoded credentials  
-- Configuration-driven design  
-
----
+- **Clean Architecture:** Strict separation between UI, Memory Management, and API Orchestration.
+- **Security:** SHA-256 password hashing for user accounts.
+- **Configuration-driven:** All constants and prompts are centralized and easily configurable.
 
 ### 4.5 User Interface
-
-Develop an interactive UI using:
-
-- Streamlit  
-
-UI must include:
-
-- Chat-style interface  
-- Real-time response rendering  
-- Conversation history display  
-- Loading indicator  
-- User-friendly layout  
-
----
+- **Streamlit-Powered:** Real-time chat interface.
+- **Apple Data Science Theme:** Custom glassmorphism, Inter typography, and dynamic gradients.
+- **User Management:** Integrated Login and Registration flow.
+- **Features:** Downloadable chat history, persistent conversations, and real-time loading indicators.
 
 ### 4.6 Cloud Deployment (AWS EC2)
-
-The application must be deployed on an AWS EC2 instance.
-
-Deployment Requirements:
-
-- Public IP accessibility  
-- Environment variable configuration  
-- Proper port exposure  
-- Basic security group setup  
-- Background process execution  
+- Successfully deployed on **AWS EC2**.
+- **Public Accessibility:** Accessible via static IP.
+- **Environment Management:** Secured variables on the remote instance.
+- **Continuous Operation:** Managed as a background process for constant uptime.
 
 ---
 
-## 5. System Architecture
-User
-- UI (Streamlit / Gradio)
-- Backend Layer
-- Prompt Engineering Module
-- Gemini API
-- Response Processing
-- UI Rendering
-
+## 5. System Architecture Breakdown
+1. **User Layer:** Interaction via a premium Streamlit web interface.
+2. **Logic Layer:** Backend handling authentication, session memory, and context building.
+3. **AI Layer:** Secure orchestration with Google Gemini via LangChain.
+4. **Cloud Layer:** Robust hosting on AWS EC2 ensuring scalability.
 
 ---
 
-## 6. Expected Deliverables
-
-- Fully functional chatbot  
-- Clean and modular codebase  
-- Public deployment link (EC2)  
-- GitHub repository  
-- README with setup and deployment steps  
-- Architecture explanation  
+## 6. Deliverables
+- [x] Fully functional Blog Assistant chatbot.
+- [x] Clean, modular Python codebase.
+- [x] High-fidelity custom CSS theme.
+- [x] Public deployment on AWS.
+- [x] Comprehensive README with architecture documentation.
 
 ---
+© 2024 | Completed for **Innomatics Research Labs**
