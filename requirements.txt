@@ -1,0 +1,6 @@
+langchain_community
+langchain
+langchain_ollama
+ollama
+langchain_core
+langchain-google-genai

@@ -11,7 +11,7 @@ flowchart TB
     classDef cloud fill:#0E7C7B,stroke:#0B5E5C,color:#fff
 
     user["User (End User)"]
-    ui["Streamlit UI (Apple DS Theme)"]
+    ui["Streamlit UI"]
     backend["Backend Layer (Python Core)"]
     prompt["Prompt Engineering Module"]
     memory["Multi-Turn Memory (JSON)"]
